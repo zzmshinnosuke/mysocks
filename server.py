@@ -33,13 +33,18 @@ class Socks5Server(socketserver.StreamRequestHandler):
 #         return data.encode()
     
     def handle_tcp(self, sock, remote):
-        fdset = [sock, remote]
-        while True:
-            r, w, e = select.select(fdset, [], [])
-            if sock in r:
-                if remote.send(self.decrypt(sock.recv(4096))) <= 0: break
-            if remote in r:
-                if sock.send(self.encrypt(remote.recv(4096))) <= 0: break
+        try:
+            fdset = [sock, remote]
+            while True:
+                r, w, e = select.select(fdset, [], [])
+                if sock in r:
+                    if remote.send(self.decrypt(sock.recv(4096))) <= 0: 
+                        break
+                if remote in r:
+                    if sock.send(self.encrypt(remote.recv(4096))) <= 0: 
+                        break
+        finally:
+            remote.close()
 
     def encrypt(self, data):
         return data #.translate(encrypt_table)
@@ -86,8 +91,8 @@ class Socks5Server(socketserver.StreamRequestHandler):
             if reply[1] == 0:
                 if mode == 1:
                     self.handle_tcp(sock, remote)
-        except socket.error:
-            print('socket error')
+        except socket.error as e:
+            print('socket error:'+str(e))
 
 
 def main():
